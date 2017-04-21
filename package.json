@@ -7,7 +7,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/NUKnightLab/juxtapose.git"
+    "url": "https://github.com/peterwheeler/juxtapose.git"
   },
   "files": [
     "build/css/juxtapose.css",
@@ -23,10 +23,23 @@
     "before",
     "after"
   ],
-  "author": "knightlab@northwestern.edu",
+  "author": "peterwheeler",
   "license": "MPL-2.0",
-  "bugs": {
-    "url": "https://github.com/NUKnightLab/juxtapose/issues"
-  },
-  "homepage": "juxtapose.knightlab.com"
+  "devDependencies": {
+    "browser-sync": "^2.10.0",
+    "connect-history-api-fallback": "^1.3.0",
+    "gulp": "^3.9.0",
+    "gulp-codekit": "^0.1.3",
+    "gulp-concat": "^2.6.0",
+    "gulp-cssnano": "^2.1.2",
+    "gulp-if": "^2.0.1",
+    "gulp-include": "^2.3.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-sass": "^3.1.0",
+    "gulp-sourcemaps": "^2.2.0",
+    "gulp-uglify": "^2.0.0",
+    "gulp-useref": "^3.1.2",
+    "gulp-util": "^3.0.7",
+    "run-sequence": "^1.2.2"
+  }
 }

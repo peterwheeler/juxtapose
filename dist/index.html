@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<head>
+	<title>JuxtaposeJS</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="css/materialize/materialize.css">
+	<link rel="stylesheet" type="text/css" href="css/juxtapose.css">
+	<link rel="icon" type="plan/x-icon" href="http://blueline.knightlab.com/assets/logos/favicon.ico" />
+	<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+	<script src="js/materialize/materialize.js"></script>
+	<style>
+		.juxtapose {
+			max-width: 100%;
+		}
+		.jx-slider {
+			margin-top: 0em;
+		}
+	</style>
+</head>
+<body>
+<div class="juxtapose-container">
+	<div class="juxtapose">
+		<img src="/images/Ill_Period_01.jpg" alt="" id="plan-1" data-label="Plan 1" data-credit="ArtasMedia">
+		<img src="/images/Ill_Period_02.jpg" alt="" id="plan-2" data-label="Plan 2" data-credit="ArtasMedia">
+		<img src="/images/Ill_Period_03.jpg" alt="" id="plan-3" data-label="Plan 3" data-credit="ArtasMedia">
+		<img src="/images/Ill_Period_04.jpg" alt="" id="plan-4" data-label="Plan 4" data-credit="ArtasMedia">
+		<img src="/images/Ill_Period_05.jpg" alt="" id="plan-5" data-label="Plan 5" data-credit="ArtasMedia">
+		<img src="/images/Ill_Period_06.jpg" alt="" id="plan-6" data-label="Plan 6" data-credit="ArtasMedia">
+		<img src="/images/Period_01.jpg" alt="" id="recon-1" data-label="Reconstuction 1" data-credit="ArtasMedia">
+		<img src="/images/Period_02.jpg" alt="" id="recon-2" data-label="Reconstuction 2" data-credit="ArtasMedia">
+		<img src="/images/Period_03.jpg" alt="" id="recon-3" data-label="Reconstuction 3" data-credit="ArtasMedia">
+		<img src="/images/Period_04.jpg" alt="" id="recon-4" data-label="Reconstuction 4" data-credit="ArtasMedia">
+		<img src="/images/Period_05.jpg" alt="" id="recon-5" data-label="Reconstuction 5" data-credit="ArtasMedia">
+		<img src="/images/Period_06.jpg" alt="" id="recon-6" data-label="Reconstuction 6" data-credit="ArtasMedia">
+	</div>
+</div>
+<script src='/js/juxtapose.js'></script>
+<script>
+$('.left-dropdown').dropdown({
+      inDuration: 300,
+      outDuration: 225,
+      constrainWidth: false, // Does not change width of dropdown to that of the activator
+      hover: true, // Activate on hover
+      gutter: 0, // Spacing from edge
+      belowOrigin: true, // Displays dropdown below the button
+      alignment: 'right', // Displays dropdown with edge aligned to the left of button
+      stopPropagation: false // Stops event propagation
+    }
+  );
+$('.right-dropdown').dropdown({
+      inDuration: 300,
+      outDuration: 225,
+      constrainWidth: false, // Does not change width of dropdown to that of the activator
+      hover: true, // Activate on hover
+      gutter: 0, // Spacing from edge
+      belowOrigin: true, // Displays dropdown below the button
+      alignment: 'left', // Displays dropdown with edge aligned to the left of button
+      stopPropagation: false // Stops event propagation
+    }
+  );
+</script>
+</body>
