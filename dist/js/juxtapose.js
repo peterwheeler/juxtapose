@@ -1,3 +1,6 @@
+/* juxtapose - v2017-03-16-19-29-42 - 2017-03-16
+ * Copyright (c) 2017 Alex Duner and Northwestern University Knight Lab 
+ */
 /* juxtapose - v1.1.2 - 2015-07-16
  * Copyright (c) 2015 Alex Duner and Northwestern University Knight Lab
  */
@@ -18,14 +21,15 @@
     this.image = new Image();
 
     this.loaded = false;
-    this.image.onload = function() {
-      self.loaded = true;
-      slider._onLoaded();
-    };
+    // this.image.onload = function() {
+    //   self.loaded = true;
+    //   // slider._onLoaded();
+    // };
 
     this.image.src = properties.src;
     this.label = properties.label || false;
     this.credit = properties.credit || false;
+    this.id = properties.id || false;
   }
 
   function FlickrGraphic(properties, slider) {
@@ -33,16 +37,17 @@
     this.image = new Image();
 
     this.loaded = false;
-    this.image.onload = function() {
-      self.loaded = true;
-      slider._onLoaded();
-    };
+    // this.image.onload = function() {
+    //   self.loaded = true;
+    //   // slider._onLoaded();
+    // };
 
     this.flickrID = this.getFlickrID(properties.src);
     this.callFlickrAPI(this.flickrID, self);
 
     this.label = properties.label || false;
     this.credit = properties.credit || false;
+    this.id = properties.id || false;
   }
 
   FlickrGraphic.prototype = {
@@ -113,6 +118,16 @@
       aspect: function() { return (this.width / this.height); }
     };
     return dimensions;
+  }
+
+  function GetElementInsideContainer(containerID, childID) {
+    var elm = document.getElementById(childID);
+    var parent = elm ? elm.parentNode : {};
+    return (parent.id && parent.id === containerID) ? elm : {};
+  }
+
+  function hasClass(element, c) {
+    return element.className && new RegExp("(\\s|^)" + c + "(\\s|$)").test(element.className);
   }
 
   function addClass(element, c) {
@@ -244,6 +259,8 @@
   function JXSlider(selector, images, options) {
 
     this.selector = selector;
+    this.images = [];
+    this.imageDivs = [];
 
     var i;
     this.options = { // new options must have default values set here.
@@ -253,6 +270,7 @@
       makeResponsive: true,
       startingPosition: "50%",
       mode: 'horizontal',
+      multiSelect: true,
       callback: null // pass a callback function if you like
     };
 
@@ -266,36 +284,58 @@
       }
     }
 
-    if (images.length == 2) {
-
-      if(checkFlickr(images[0].src)) {
-        this.imgBefore = new FlickrGraphic(images[0], this);
-      } else {
-        this.imgBefore = new Graphic(images[0], this);
+    if (images.length >= 2) {
+      for (var i = 0; i < images.length; i++) {
+        if(checkFlickr(images[i].src)) {
+          this.imgNew = new FlickrGraphic(images[i], this);
+        } else {
+          this.imgNew = new Graphic(images[i], this);
+        }
+        this.imgNew.loaded = true;
+        if(this.imgNew.loaded === true){
+          this._onLoaded(this.imgNew);
+        }
+        // if (this.imgNew.credit) {
+        // this.options.showCredits = true;
+        // } else {
+        // this.options.showCredits = false;
+        // }
+        this.images.push(this.imgNew);
       }
-
-      if(checkFlickr(images[1].src)) {
-        this.imgAfter = new FlickrGraphic(images[1], this);
-      } else {
-        this.imgAfter = new Graphic(images[1], this);
-      }
-
-    } else {
-      console.warn("The images parameter takes two Image objects.");
+    } else if (images.length < 2) {
+      console.warn("The images parameter takes at least two Image objects.");
     }
+    this.imgBefore = this.images[0];
+    this.imgAfter = this.images[1];
 
-    if (this.imgBefore.credit || this.imgAfter.credit) {
-      this.options.showCredits = true;
-    } else {
-      this.options.showCredits = false;
+    this.allLoaded = function(loaded){
+      return loaded = true;
     }
+    if (this.images.every(this.allLoaded) === true) {
+      this._allLoaded();
+    };
   }
 
   JXSlider.prototype = {
 
+    addSlider: function(input, image) {
+      if (this.options.mode === "vertical") {
+        leftPercent = getTopPercent(this.slider, input);
+      } else {
+        leftPercent = getLeftPercent(this.slider, input);
+      }
+
+      leftPercent = leftPercent.toFixed(2) + "%";
+
+      if (this.options.mode === "vertical") {
+          image.style.height = leftPercent;
+        } else {
+          image.style.width = leftPercent;
+        }
+    },
+
     updateSlider: function(input, animate) {
       var leftPercent, rightPercent;
-
       if (this.options.mode === "vertical") {
         leftPercent = getTopPercent(this.slider, input);
       } else {
@@ -330,30 +370,81 @@
       }
     },
 
+    updateImage: function(inImage, outImage){
+      var newImage, oldImage;
+
+      newImage = document.getElementById(inImage);
+      oldImage = this.slider.getElementsByClassName('jx-image ' + outImage)[0];
+
+      removeClass(oldImage, outImage);
+      addClass(newImage, outImage);
+      removeClass(newImage, 'jx-hidden');
+      addClass(oldImage, 'jx-hidden');
+
+      if (this.options.mode === "vertical") {
+        newImage.style.height = oldImage.style.height;
+        oldImage.style.height = '50%';
+      } else {
+        newImage.style.width = oldImage.style.width;
+        oldImage.style.width = '50%';
+      }
+
+      if(outImage === 'jx-left'){
+        this.leftImage = newImage;
+      } else {
+        this.rightImage = newImage;
+      }
+    },
+
     getPosition: function() {
       return this.sliderPosition;
     },
 
-    displayLabel: function(element, labelText) {
+    displayLabel: function(element, labelSide, labelText) {
       label = document.createElement("div");
-      label.className = 'jx-label';
+      label.className = 'jx-label jx-label-' + labelSide;
       label.setAttribute('tabindex', 0); //put the controller in the natural tab order of the document
 
       setText(label, labelText);
       element.appendChild(label);
     },
 
-    displayCredits: function() {
+    updateLabel: function(labelText, labelSide) {
+      var label = document.getElementsByClassName(labelSide)[0];
+      setText(label, labelText);
+    },
+
+    updateDropdown: function(list, altList, labelId) {
+      for (var i = 0; i < list.length; i++) {
+        if(hasClass(list[i], 'enabled')){
+          removeClass(list[i], 'enabled');
+        }
+        if(list[i].id === labelId.id){
+          addClass(list[i], 'enabled');
+        }
+      }
+      for (var i = 0; i < altList.length; i++) {
+        if(hasClass(altList[i], 'disabled')){
+          removeClass(altList[i], 'disabled');
+        }
+        if(list[i].id === labelId.id){
+          addClass(altList[i], 'disabled');
+        }
+      }
+    },
+
+    displayCredits: function(creditText) {
       credit = document.createElement("div");
       credit.className = "jx-credit";
 
       text = "<em>Photo Credits:</em>";
-      if (this.imgBefore.credit) { text += " <em>Before</em> " + this.imgBefore.credit; }
-      if (this.imgAfter.credit) { text += " <em>After</em> " + this.imgAfter.credit; }
+      if (creditText) {
+        text += " <em>Before</em> " + creditText;
+      }
 
       credit.innerHTML = text;
 
-      this.wrapper.appendChild(credit);
+      // this.wrapper.appendChild(credit);
     },
 
     setStartingPosition: function(s) {
@@ -411,6 +502,7 @@
       if (window.location !== window.parent.location && !this.options.makeResponsive) {
         dims = this.responsivizeIframe(dims);
       }
+      console.log(dims, window.innerWidth);
 
       this.wrapper.style.height = parseInt(dims.height) + "px";
       this.wrapper.style.width = parseInt(dims.width) + "px";
@@ -430,90 +522,160 @@
       return result;
     },
 
-    _onLoaded: function() {
+    _onLoaded: function(imageObject) {
+        this.currentImage = document.createElement("div");
+        this.currentImage.className = 'jx-image jx-hidden';
+        this.currentImage.id = imageObject.id;
+        this.currentImage.setAttribute('data-label', imageObject.label);
+        this.currentImage.appendChild(imageObject.image);
 
-      if (this.imgBefore && this.imgBefore.loaded === true &&
-        this.imgAfter && this.imgAfter.loaded === true) {
-
-        this.wrapper = document.querySelector(this.selector);
-        addClass(this.wrapper, 'juxtapose');
-
-        this.wrapper.style.width = getNaturalDimensions(this.imgBefore.image).width;
-        this.setWrapperDimensions();
-
-        this.slider = document.createElement("div");
-        this.slider.className = 'jx-slider';
-        this.wrapper.appendChild(this.slider);
-
-        if (this.options.mode != "horizontal") {
-          addClass(this.slider, this.options.mode);
+        if (this.options.showCredits === true) {
+          this.displayCredits(imageObject.credit);
         }
 
-        this.handle = document.createElement("div");
-        this.handle.className = 'jx-handle';
+        this.imageDivs.push(this.currentImage);
+    },
 
-        this.rightImage = document.createElement("div");
-        this.rightImage.className = 'jx-image jx-right';
-        this.rightImage.appendChild(this.imgAfter.image);
+    _allLoaded: function(){
+      this.container = document.getElementsByClassName('juxtapose-container')[0];
+      this.wrapper = document.querySelector(this.selector);
+      addClass(this.wrapper, 'juxtapose');
 
+      this.wrapper.style.width = getNaturalDimensions(this.imgBefore.image).width;
+      this.setWrapperDimensions();
 
-        this.leftImage = document.createElement("div");
-        this.leftImage.className = 'jx-image jx-left';
-        this.leftImage.appendChild(this.imgBefore.image);
+      this.slider = document.createElement("div");
+      this.slider.className = 'jx-slider';
+      this.wrapper.appendChild(this.slider);
 
-        this.labCredit = document.createElement("a");
-        this.labCredit.setAttribute('href', 'http://juxtapose.knightlab.com');
-        this.labCredit.setAttribute('target', '_blank');
-        this.labCredit.className = 'jx-knightlab';
-        this.labLogo = document.createElement("div");
-        this.labLogo.className = 'knightlab-logo';
-        this.labCredit.appendChild(this.labLogo);
-        this.projectName = document.createElement("span");
-        this.projectName.className = 'juxtapose-name';
-        setText(this.projectName, 'JuxtaposeJS');
-        this.labCredit.appendChild(this.projectName);
-
-        this.slider.appendChild(this.handle);
-        this.slider.appendChild(this.leftImage);
-        this.slider.appendChild(this.rightImage);
-        this.slider.appendChild(this.labCredit);
-
-        this.leftArrow = document.createElement("div");
-        this.rightArrow = document.createElement("div");
-        this.control = document.createElement("div");
-        this.controller = document.createElement("div");
-
-        this.leftArrow.className = 'jx-arrow jx-left';
-        this.rightArrow.className = 'jx-arrow jx-right';
-        this.control.className = 'jx-control';
-        this.controller.className = 'jx-controller';
-
-        this.controller.setAttribute('tabindex', 0); //put the controller in the natural tab order of the document
-        this.controller.setAttribute('role', 'slider');
-        this.controller.setAttribute('aria-valuenow', 50);
-        this.controller.setAttribute('aria-valuemin', 0);
-        this.controller.setAttribute('aria-valuemax', 100);
-
-        this.handle.appendChild(this.leftArrow);
-        this.handle.appendChild(this.control);
-        this.handle.appendChild(this.rightArrow);
-        this.control.appendChild(this.controller);
-
-        this._init();
+      if (this.options.mode != "horizontal") {
+        addClass(this.slider, this.options.mode);
       }
+
+      this.handle = document.createElement("div");
+      this.handle.className = 'jx-handle';
+
+      this.leftImage = this.imageDivs[0];
+      this.leftImage.className = 'jx-image jx-left';
+
+      this.rightImage = this.imageDivs[1];
+      this.rightImage.className = 'jx-image jx-right';
+
+      this.leftDropDownContainer = document.createElement('div');
+      this.leftDropDownContainer.className = 'dropdown-container dropdown-left';
+
+      this.leftDropDownButton = document.createElement("a");
+      this.leftDropDownButton.className = 'dropdown-button btn left-button';
+      this.leftDropDownButton.setAttribute('data-activates', 'left-dropdown');
+      this.leftDropDownButton.setAttribute('data-beloworigin', 'true');
+      this.leftDropDownButton.setAttribute('href', '#');
+      this.leftDropDownButton.innerHTML = '<i class="material-icons right">&#xE5C5;</i>Left map';
+
+      this.leftDropDown = document.createElement("ul");
+      this.leftDropDown.id = 'left-dropdown';
+      this.leftDropDown.className = 'dropdown-content';
+
+      this.rightDropDownContainer = document.createElement('div');
+      this.rightDropDownContainer.className = 'dropdown-container dropdown-right';
+
+      this.rightDropDownButton = document.createElement("a");
+      this.rightDropDownButton.className = 'dropdown-button btn right-button';
+      this.rightDropDownButton.setAttribute('data-activates', 'right-dropdown');
+      this.rightDropDownButton.setAttribute('data-beloworigin', 'true');
+      this.rightDropDownButton.setAttribute('href', '#');
+      this.rightDropDownButton.innerHTML = '<i class="material-icons left">&#xE5C5;</i>Right map';
+
+      this.rightDropDown = document.createElement("ul");
+      this.rightDropDown.id = 'right-dropdown';
+      this.rightDropDown.className = 'dropdown-content';
+
+      this.leftDropDownContainer.appendChild(this.leftDropDownButton);
+      this.leftDropDownContainer.appendChild(this.leftDropDown);
+
+      this.rightDropDownContainer.appendChild(this.rightDropDownButton);
+      this.rightDropDownContainer.appendChild(this.rightDropDown);
+
+      for (var i = 0; i < this.imageDivs.length; i++) {
+        var currentLink = this.imageDivs[i];
+        this.leftLink = document.createElement('li');
+        addClass(this.leftLink, 'left-map-link');
+        this.leftLink.id = this.imageDivs[i].id + '-left';
+        this.leftLink.setAttribute('data-ref', this.imageDivs[i].id);
+        this.leftLink.setAttribute('data-label', this.imageDivs[i].getAttribute('data-label'));
+        this.leftLink.innerHTML = '<a href="#">'+ this.imageDivs[i].getAttribute('data-label') + '</a>';
+        this.rightLink = document.createElement("li");
+        addClass(this.rightLink, 'right-map-link');
+        this.rightLink.id = this.imageDivs[i].id + '-right';
+        this.rightLink.setAttribute('data-ref', this.imageDivs[i].id);
+        this.rightLink.setAttribute('data-label', this.imageDivs[i].getAttribute('data-label'));
+        this.rightLink.innerHTML = '<a href="#">'+ this.imageDivs[i].getAttribute('data-label') + '</a>';
+        this.leftDropDown.appendChild(this.leftLink);
+        this.rightDropDown.appendChild(this.rightLink);
+      }
+
+      this.labCredit = document.createElement("a");
+      this.labCredit.setAttribute('href', 'http://juxtapose.knightlab.com');
+      this.labCredit.setAttribute('target', '_blank');
+      this.labCredit.className = 'jx-knightlab';
+
+      this.labLogo = document.createElement("div");
+      this.labLogo.className = 'knightlab-logo';
+
+      this.labCredit.appendChild(this.labLogo);
+
+      this.projectName = document.createElement("span");
+      this.projectName.className = 'juxtapose-name';
+
+      setText(this.projectName, 'JuxtaposeJS');
+      this.labCredit.appendChild(this.projectName);
+
+      this.slider.appendChild(this.handle);
+      for (var i = 0; i < this.imageDivs.length; i++) {
+        this.slider.appendChild(this.imageDivs[i])
+      }
+      this.slider.appendChild(this.labCredit);
+
+      this.leftArrow = document.createElement("div");
+      this.rightArrow = document.createElement("div");
+      this.control = document.createElement("div");
+      this.controller = document.createElement("div");
+
+      this.leftArrow.className = 'jx-arrow jx-left';
+      this.rightArrow.className = 'jx-arrow jx-right';
+      this.control.className = 'jx-control';
+      this.controller.className = 'jx-controller';
+
+      this.controller.setAttribute('tabindex', 0); //put the controller in the natural tab order of the document
+      this.controller.setAttribute('role', 'slider');
+      this.controller.setAttribute('aria-valuenow', 50);
+      this.controller.setAttribute('aria-valuemin', 0);
+      this.controller.setAttribute('aria-valuemax', 100);
+
+      this.handle.appendChild(this.leftArrow);
+      this.handle.appendChild(this.control);
+      this.handle.appendChild(this.rightArrow);
+      this.control.appendChild(this.controller);
+
+      this.container.prepend(this.rightDropDownContainer);
+      this.container.prepend(this.leftDropDownContainer);
+
+      this._init();
+      console.log("all loaded");
     },
 
     _init: function() {
-
-      if (this.checkImages() === false) {
-        console.warn(this, "Check that the two images have the same aspect ratio for the slider to work correctly.");
+      for (var i = 0; i < this.imageDivs.length; i++) {
+        this.addSlider(this.options.startingPosition, this.imageDivs[i]);
       }
-
       this.updateSlider(this.options.startingPosition, false);
 
       if (this.options.showLabels === true) {
-        if (this.imgBefore.label) { this.displayLabel(this.leftImage, this.imgBefore.label); }
-        if (this.imgAfter.label) { this.displayLabel(this.rightImage, this.imgAfter.label); }
+        if (this.imgBefore.label) {
+          this.displayLabel(this.wrapper, 'left', this.imgBefore.label);
+        }
+        if (this.imgAfter.label) {
+          this.displayLabel(this.wrapper, 'right', this.imgAfter.label);
+        }
       }
 
       if (this.options.showCredits === true) {
@@ -524,7 +686,29 @@
       window.addEventListener("resize", function() {
         self.setWrapperDimensions();
       });
+      
+      var leftList = document.getElementById('left-dropdown').getElementsByTagName("li");
+      var rightList = document.getElementById('right-dropdown').getElementsByTagName("li");
+      self.updateDropdown(leftList, rightList, GetElementInsideContainer('left-dropdown', this.imgBefore.id + '-left'));
+      self.updateDropdown(rightList, leftList, GetElementInsideContainer('right-dropdown', this.imgAfter.id + '-right'));
 
+      
+      for (var i = 0; i < leftList.length; i++) {
+          leftList[i].addEventListener("click", function(e) {
+            e.preventDefault();
+            self.updateImage(this.getAttribute('data-ref'), 'jx-left');
+            self.updateLabel(this.getAttribute('data-label'), 'jx-label-left');
+            self.updateDropdown(leftList, rightList, this);
+          }, false);
+      }
+      for (var i = 0; i < rightList.length; i++) {
+          rightList[i].addEventListener("click", function(e) {
+            e.preventDefault();
+            self.updateImage(this.getAttribute('data-ref'), 'jx-right');
+            self.updateLabel(this.getAttribute('data-label'), 'jx-label-right');
+            self.updateDropdown(rightList, leftList, this);
+          }, false);
+      }
 
       // Set up Javascript Events
       // On mousedown, call updateSlider then set animate to false
@@ -563,7 +747,6 @@
           e.stopPropagation();
           self.updateSlider(event, false);
         });
-
       });
 
       /* keyboard accessibility */
@@ -595,7 +778,7 @@
            var key = event.which || event.keyCode;
             if ((key == 13) || (key ==32)) {
               self.updateSlider("90%", true);
-                self.controller.setAttribute('aria-valuenow', 90);
+              self.controller.setAttribute('aria-valuenow', 90);
             }
       });
 
@@ -603,8 +786,8 @@
       this.rightImage.addEventListener("keydown", function (event) {
            var key = event.which || event.keyCode;
             if ((key == 13) || (key ==32)) {
-            self.updateSlider("10%", true);
-            self.controller.setAttribute('aria-valuenow', 10);
+              self.updateSlider("10%", true);
+              self.controller.setAttribute('aria-valuenow', 10);
             }
       });
 
@@ -627,8 +810,8 @@
     }
 
     var w = element;
-
     var images = w.querySelectorAll('img');
+    var allImages = [];
 
     var options = {};
     // don't set empty string into options, that's a false false.
@@ -662,22 +845,18 @@
       w.innerText = '';
     }
 
-    slider = new juxtapose.JXSlider(
-      selector,
-      [
+    for (var i = 0; i < images.length; i++) {
+      allImages.push(
         {
-          src: images[0].src,
-          label: images[0].getAttribute('data-label'),
-          credit: images[0].getAttribute('data-credit')
-        },
-        {
-          src: images[1].src,
-          label: images[1].getAttribute('data-label'),
-          credit: images[1].getAttribute('data-credit')
+          src: images[i].src,
+          label: images[i].getAttribute('data-label'),
+          credit: images[i].getAttribute('data-credit'),
+          id: images[i].getAttribute('id')
         }
-      ],
-      options
-    );
+      )
+    }
+
+    slider = new juxtapose.JXSlider(selector, allImages, options);
   };
 
   //Enable HTML Implementation

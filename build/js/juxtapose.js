@@ -120,6 +120,16 @@
     return dimensions;
   }
 
+  function GetElementInsideContainer(containerID, childID) {
+    var elm = document.getElementById(childID);
+    var parent = elm ? elm.parentNode : {};
+    return (parent.id && parent.id === containerID) ? elm : {};
+  }
+
+  function hasClass(element, c) {
+    return element.className && new RegExp("(\\s|^)" + c + "(\\s|$)").test(element.className);
+  }
+
   function addClass(element, c) {
     if (element.classList) {
       element.classList.add(c);
@@ -326,7 +336,6 @@
 
     updateSlider: function(input, animate) {
       var leftPercent, rightPercent;
-      console.log(input);
       if (this.options.mode === "vertical") {
         leftPercent = getTopPercent(this.slider, input);
       } else {
@@ -405,6 +414,25 @@
       setText(label, labelText);
     },
 
+    updateDropdown: function(list, altList, labelId) {
+      for (var i = 0; i < list.length; i++) {
+        if(hasClass(list[i], 'enabled')){
+          removeClass(list[i], 'enabled');
+        }
+        if(list[i].id === labelId.id){
+          addClass(list[i], 'enabled');
+        }
+      }
+      for (var i = 0; i < altList.length; i++) {
+        if(hasClass(altList[i], 'disabled')){
+          removeClass(altList[i], 'disabled');
+        }
+        if(list[i].id === labelId.id){
+          addClass(altList[i], 'disabled');
+        }
+      }
+    },
+
     displayCredits: function(creditText) {
       credit = document.createElement("div");
       credit.className = "jx-credit";
@@ -474,6 +502,7 @@
       if (window.location !== window.parent.location && !this.options.makeResponsive) {
         dims = this.responsivizeIframe(dims);
       }
+      console.log(dims, window.innerWidth);
 
       this.wrapper.style.height = parseInt(dims.height) + "px";
       this.wrapper.style.width = parseInt(dims.width) + "px";
@@ -538,8 +567,9 @@
       this.leftDropDownButton = document.createElement("a");
       this.leftDropDownButton.className = 'dropdown-button btn left-button';
       this.leftDropDownButton.setAttribute('data-activates', 'left-dropdown');
+      this.leftDropDownButton.setAttribute('data-beloworigin', 'true');
       this.leftDropDownButton.setAttribute('href', '#');
-      this.leftDropDownButton.innerHTML = '<span>Left map</span><i class="material-icons">&#xE5C5;</i>';
+      this.leftDropDownButton.innerHTML = '<i class="material-icons right">&#xE5C5;</i>Left map';
 
       this.leftDropDown = document.createElement("ul");
       this.leftDropDown.id = 'left-dropdown';
@@ -551,8 +581,9 @@
       this.rightDropDownButton = document.createElement("a");
       this.rightDropDownButton.className = 'dropdown-button btn right-button';
       this.rightDropDownButton.setAttribute('data-activates', 'right-dropdown');
+      this.rightDropDownButton.setAttribute('data-beloworigin', 'true');
       this.rightDropDownButton.setAttribute('href', '#');
-      this.rightDropDownButton.innerHTML = '<i class="material-icons">&#xE5C5;</i><span>Right map</span>';
+      this.rightDropDownButton.innerHTML = '<i class="material-icons left">&#xE5C5;</i>Right map';
 
       this.rightDropDown = document.createElement("ul");
       this.rightDropDown.id = 'right-dropdown';
@@ -567,10 +598,14 @@
       for (var i = 0; i < this.imageDivs.length; i++) {
         var currentLink = this.imageDivs[i];
         this.leftLink = document.createElement('li');
+        addClass(this.leftLink, 'left-map-link');
+        this.leftLink.id = this.imageDivs[i].id + '-left';
         this.leftLink.setAttribute('data-ref', this.imageDivs[i].id);
         this.leftLink.setAttribute('data-label', this.imageDivs[i].getAttribute('data-label'));
         this.leftLink.innerHTML = '<a href="#">'+ this.imageDivs[i].getAttribute('data-label') + '</a>';
         this.rightLink = document.createElement("li");
+        addClass(this.rightLink, 'right-map-link');
+        this.rightLink.id = this.imageDivs[i].id + '-right';
         this.rightLink.setAttribute('data-ref', this.imageDivs[i].id);
         this.rightLink.setAttribute('data-label', this.imageDivs[i].getAttribute('data-label'));
         this.rightLink.innerHTML = '<a href="#">'+ this.imageDivs[i].getAttribute('data-label') + '</a>';
@@ -629,10 +664,6 @@
     },
 
     _init: function() {
-
-      // if (this.checkImages() === false) {
-      //   console.warn(this, "Check that the two images have the same aspect ratio for the slider to work correctly.");
-      // }
       for (var i = 0; i < this.imageDivs.length; i++) {
         this.addSlider(this.options.startingPosition, this.imageDivs[i]);
       }
@@ -655,20 +686,27 @@
       window.addEventListener("resize", function() {
         self.setWrapperDimensions();
       });
-
+      
       var leftList = document.getElementById('left-dropdown').getElementsByTagName("li");
+      var rightList = document.getElementById('right-dropdown').getElementsByTagName("li");
+      self.updateDropdown(leftList, rightList, GetElementInsideContainer('left-dropdown', this.imgBefore.id + '-left'));
+      self.updateDropdown(rightList, leftList, GetElementInsideContainer('right-dropdown', this.imgAfter.id + '-right'));
+
+      
       for (var i = 0; i < leftList.length; i++) {
           leftList[i].addEventListener("click", function(e) {
+            e.preventDefault();
             self.updateImage(this.getAttribute('data-ref'), 'jx-left');
             self.updateLabel(this.getAttribute('data-label'), 'jx-label-left');
+            self.updateDropdown(leftList, rightList, this);
           }, false);
       }
-
-      var rightList = document.getElementById('right-dropdown').getElementsByTagName("li");
       for (var i = 0; i < rightList.length; i++) {
           rightList[i].addEventListener("click", function(e) {
+            e.preventDefault();
             self.updateImage(this.getAttribute('data-ref'), 'jx-right');
             self.updateLabel(this.getAttribute('data-label'), 'jx-label-right');
+            self.updateDropdown(rightList, leftList, this);
           }, false);
       }
 

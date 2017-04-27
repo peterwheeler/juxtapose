@@ -28,7 +28,6 @@ gulp.task("sass-scripts", function() {
 gulp.task("juxtapose", function() {
   gulp.src("./build/js/juxtapose.js")
     .pipe(codekit())
-    .pipe(rename("storytour.js"))
     .pipe(gulp.dest("./build/js/"))
     .pipe(gulp.dest("./dist/js/"));  
 });

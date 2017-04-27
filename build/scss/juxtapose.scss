@@ -1,18 +1,31 @@
 /* juxtapose - v2017-03-16-19-29-42 - 2017-03-16
  * Copyright (c) 2017 Alex Duner and Northwestern University Knight Lab 
  */
-.left-button {
-  	position: absolute;
-  	top: 0px;
-  	left: 0px;
-  	z-index: 20;
+.juxtapose-container {
+	overflow-x: hidden;
 }
 
-.right-button {
-  	position: absolute;
-  	top: 0px;
+.dropdown-container {
+	position: fixed;
+	top: 0px;
+	z-index: 20;
+}
+
+.dropdown-left {
+  	left: 0px;
+}
+
+.dropdown-right {
   	right: 0px;
-  	z-index: 20;
+}
+
+.dropdown-content li.enabled a {
+	font-weight: bold;
+}
+
+.dropdown-content li.disabled a {
+	color: #e0e0e0;
+	cursor: default;
 }
 
 div.juxtapose {
@@ -114,7 +127,6 @@ div.jx-arrow {
 	height: 0;
 	transition: all .2s ease;
 }
-
 
 div.jx-arrow.jx-left {
 	left: 2px;
