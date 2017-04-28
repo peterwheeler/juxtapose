@@ -52,7 +52,7 @@ gulp.task("useref", function() {
 	    // Minifies only if it's a JavaScript file
 	    .pipe(gulpIf("*.js", uglify()))
 	    // Minifies only if it's a CSS file
-    	.pipe(gulpIf('*.css', cssnano()))
+    	.pipe(gulpIf("*.css", cssnano()))
     	// .pipe(sourcemaps.write('./dist/'))
 	    .pipe(gulp.dest(directory));
 });
